@@ -2,8 +2,9 @@ const inquirer = require("inquirer");
 const fs = require("fs");
 const util = require("util");
 const api = require("./utils/api.js");
-
 const writeFileAsync = util.promisify(fs.writeFile);
+const generateMarkdown = require("./utils/generateMarkdown");
+
 
 function promptUser() {
   return inquirer.prompt([
@@ -23,7 +24,7 @@ function promptUser() {
       message: "Please write a short description of your project."
     },
     {
-      type: "input",
+      type: "checkbox",
       name: "license",
       message: "What kind of license should your project have?",
       choices: ['MIT', 'APACHE 2.0', 'GPL 3.0', 'BSD 3', 'None'],
@@ -53,69 +54,20 @@ function promptUser() {
   ]);
 }
 
-function generateMD(answers) {
-  return `
-# ${answers.project}
-
-## Description
-
-${answers.description}
-
-## Table of Contents
-
-* [Installation](#installation)
-
-* [Usage](#usage)
-
-* [License](#license)
-
-* [Contributing](#contributing)
-
-* [Tests](#tests)
-
-* [Questions](#questions)
-
-## Installation
-
-To install necessary dependencies, run the following command:
-
-${answers.install}
-
-## Usage
-
-## License
-
-This porject is licensed under the ${answers.license} license.
-
-## Contributing
-
-${answers.contributing}
-
-## Tests
-
-To run tests, run the following command:
-
-${answers.tests}
-
-## Questions
 
 
-  `;
-}
+promptUser()
+    .then(function(data) {
+        const username = data.username;
+        api.getUser(username).then(function(getUserResponse) {
+            const markDown = generateMarkdown(data, getUserResponse);
+            return writeFileAsync("README2.MD", markDown);
+        })
+    })
 
-async function init() {
-  console.log("hi")
-  try {
-    const answers = await promptUser();
-
-    const md = generateMD(answers);
-
-    await writeFileAsync("README2.md", md);
-
-    console.log("Successfully wrote to README2.md");
-  } catch(err) {
-    console.log(err);
-  }
-}
-
-init();
+.then(function() {
+        console.log("Successfully wrote to README.MD");
+    })
+    .catch(function(err) {
+        console.log(err);
+    });
